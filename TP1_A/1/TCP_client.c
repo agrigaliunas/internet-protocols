@@ -58,9 +58,9 @@ while(1)
 
  buf[numbytes] = '\0';
 
- printf("Received: %s\n", buf);
- if (send(sockfd, "Respuesta!\n", 12, 0) == -1) perror("send");
- else printf("Enviado\n");
+ printf("Mensaje recibido: %s\n", buf);
+ if (send(sockfd, "Respondiendo del cliente\n", 26, 0) == -1) perror("send");
+ else printf("Mensaje enviado\n");
 }
  close(sockfd);
 
