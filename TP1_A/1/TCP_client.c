@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){ // argc
 
     int socket_file_descriptor;
     int bytes_recieved;
-    char messageRecieved[MAXDATASIZE];
+    char messageReceived[MAXDATASIZE];
 
     struct hostent *he; // contiene campos con informacion del host
     struct sockaddr_in their_addr; // guarda info sobre quien se va a conectar
@@ -51,17 +51,21 @@ int main(int argc, char *argv[]){ // argc
         exit(1);
     }
 
-    while(1){
+    if ((bytes_recieved=recv(socket_file_descriptor, messageReceived, MAXDATASIZE, 0)) == -1){
+        perror("recv");
+        exit(1);
+    }
+    while(strcmp(messageReceived, "disc") != 0 && strlen(messageReceived) != 0){
 
-        if ((bytes_recieved=recv(socket_file_descriptor, messageRecieved, MAXDATASIZE, 0)) == -1){
+        messageReceived[bytes_recieved] = '\0';
+
+        printf("Mensaje recibido del server: %s\n", messageReceived);
+        printf("Bytes recibidos: %ld\n",strlen(messageReceived));
+
+        if ((bytes_recieved=recv(socket_file_descriptor, messageReceived, MAXDATASIZE, 0)) == -1){
             perror("recv");
             exit(1);
         }
-        messageRecieved[bytes_recieved] = '\0';
-
-        printf("Mensaje recibido del server: %s\n", messageRecieved);
-        printf("Bytes recibidos: %ld\n",strlen(messageRecieved)*sizeof(messageRecieved));
-
 
     }
 

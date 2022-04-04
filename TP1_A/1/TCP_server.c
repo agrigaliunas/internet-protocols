@@ -61,11 +61,11 @@ int main(){
 
         if(!fork()){
 
-            while(1){
+            while(strcmp(message, "disc") != 0){
 
                 writeMessage(message); // escribo el mensaje a enviar desde el servidor.
-                
-                if (send(new_file_descriptor, message, strlen(message), 0) == -1){
+
+                if (send(new_file_descriptor, message, strlen(message)*sizeof(char), 0) == -1){
 
                 perror("send");
                 }
