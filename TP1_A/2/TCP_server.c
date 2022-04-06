@@ -14,6 +14,12 @@
 #define BACKLOG 5 // Cantidad de conecciones en la cola.
 #define MAXDATASIZE 100
 
+void writeMessage(char message[MAXDATASIZE]){
+    printf("Write your message\n ");
+    fgets(message,MAXDATASIZE,stdin);
+}
+
+
 int main(){
     int socket_file_descriptor;
     int new_file_descriptor; // escuchamos en sockfd, nueva coneccion en new_fd
@@ -21,7 +27,8 @@ int main(){
     struct sockaddr_in their_addr;
     socklen_t sin_size;
     int bytes_recieved;
-    char message[MAXDATASIZE];
+    char messageReceived[MAXDATASIZE];
+    char messageToSend[MAXDATASIZE];
 
 
     if ((socket_file_descriptor = socket(AF_INET, SOCK_STREAM, 0)) == -1){
@@ -55,22 +62,26 @@ int main(){
         printf("server: conexion entrante de: %s\n", inet_ntoa(their_addr.sin_addr));
 
         if(!fork()){
-            while(1){
-                if (send(new_file_descriptor, "Hablando desde servidor\n", 25, 0) == -1){
+            while(strcmp(messageToSend, "disc") != 0 || strcmp(messageReceived, "disc") != 0){
 
+                if ((bytes_recieved=recv(new_file_descriptor, messageReceived, MAXDATASIZE, 0)) == -1){
+                    perror("recv");
+                    exit(1);
+                }
+                messageReceived[bytes_recieved] = '\0';
+
+                printf("Cliente: %s\n", messageReceived);
+
+                writeMessage(messageToSend);
+                
+                if (send(new_file_descriptor, messageToSend, strlen(messageToSend), 0) == -1){
                 perror("send");
                 }
 
                 else printf("Mensaje enviado\n");
             
-                if ((bytes_recieved=recv(new_file_descriptor, message, MAXDATASIZE, 0)) == -1){
-                    perror("recv");
-                    exit(1);
-                }
 
-                message[bytes_recieved] = '\0';
 
-                printf("Recibido: %s\n", message);
             }
         }  
         else close(new_file_descriptor);
