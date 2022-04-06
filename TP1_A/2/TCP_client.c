@@ -73,7 +73,6 @@ int main(int argc, char *argv[]){ // argc
 
         printf("Server: %s\n", messageReceived);
 
-
     }
 
     close(socket_file_descriptor);

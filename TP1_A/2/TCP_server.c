@@ -73,17 +73,15 @@ int main(){
                 printf("Cliente: %s\n", messageReceived);
 
                 writeMessage(messageToSend);
-                
+
                 if (send(new_file_descriptor, messageToSend, strlen(messageToSend), 0) == -1){
                 perror("send");
                 }
 
                 else printf("Mensaje enviado\n");
-            
-
-
             }
         }  
+        
         else close(new_file_descriptor);
 
         while(waitpid(-1, NULL, WNOHANG) > 0);
