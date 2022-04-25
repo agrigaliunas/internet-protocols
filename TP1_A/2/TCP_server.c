@@ -11,7 +11,7 @@
 
 #define MYPORT 3490  // Puerto al cual nos conectaremos
 
-#define BACKLOG 5 // Cantidad de conecciones en la cola.
+#define BACKLOG 5 // Cantidad de conexiones en la cola.
 #define MAXDATASIZE 100
 
 void writeMessage(char message[MAXDATASIZE]){
