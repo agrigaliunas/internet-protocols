@@ -1,71 +1,77 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
+#include <stdio.h>  
+#include <stdlib.h> 
+#include <string.h> 
+#include <netdb.h>  
+#include <netinet/in.h> 
+#include <unistd.h> 
+#include <sys/types.h>  
+#include <sys/socket.h> 
+#include <arpa/inet.h>  
 
-#define MYPORT 3490  // Puerto al cual nos conectaremos
-
-#define BACKLOG 5 // Cantidad de conecciones en la cola.
+#define MYPORT 3490  
+#define BACKLOG 5
 #define MAXDATASIZE 100
 
-int main(){
-    int socket_file_descriptor;
-    int new_file_descriptor; // escuchamos en sockfd, nueva coneccion en new_fd
-    struct sockaddr_in my_addr; 
-    struct sockaddr_in their_addr;
-    int sin_size;
-    int numbytes;
-    char buf[MAXDATASIZE];
+void writeMessage(char message[MAXDATASIZE]){
+    fgets(message,MAXDATASIZE,stdin);
+}
 
-    if ((socket_file_descriptor = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1){
-        perror("socket");
+int main(){
+    printf("Servidor iterativo UDP\n");
+
+    int socket_file_descriptor;
+    struct sockaddr_in socket_addr;
+    struct sockaddr_in client_addr;
+
+    socklen_t addr_size = sizeof(struct sockaddr_in);
+
+    char message_received[MAXDATASIZE];
+    char message_to_send[MAXDATASIZE];
+
+    int returned_int;
+    int host_addr_size;
+
+    socket_file_descriptor = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if(socket_file_descriptor == -1){
+        fprintf(stderr, "No se pudo crear el socket\n");
         exit(1);
     }
 
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_port   = htons(MYPORT);
-    my_addr.sin_addr.s_addr = INADDR_ANY;
-    bzero(&(my_addr.sin_zero), 8);
+    socket_addr.sin_family = AF_INET;
+    socket_addr.sin_port   = htons(MYPORT);
+    socket_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    bzero(&(socket_addr.sin_zero), 8*sizeof(unsigned char));
 
-    if (bind(socket_file_descriptor, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) == -1){
-        perror("bind");
+    returned_int = bind(socket_file_descriptor, (struct sockaddr *)&socket_addr, sizeof(struct sockaddr));
+    if(returned_int == -1){
+        fprintf(stderr, "No se pudo bindear\n");
         exit(1);
     }
 
 
     while(1){
-        struct sockaddr_in host_address;
-        int host_address_size;
-        unsigned char *address_holder;
-        char message[]="Mensaje enviado";
-        char buffer[256];
+        memset(message_received, 0, MAXDATASIZE);
 
-        memset((void *)&host_address, 0, sizeof(host_address));
-        host_address.sin_family=AF_INET;
-        host_address.sin_port=htons(MYPORT);
-        address_holder=(unsigned char*)&host_address.sin_addr.s_addr;
-        address_holder[0]=127;
-        address_holder[1]=0;
-        address_holder[2]=0;
-        address_holder[3]=1;
-
-        memset((void*)&host_address, 0, sizeof(host_address));
-        host_address.sin_family=AF_INET;
-        host_address_size=sizeof(host_address);
-
-        if(recvfrom(socket_file_descriptor, buffer, 255, 0, (struct sockaddr*)&host_address, &host_address_size)<0) // Lee e imprime de donde obtuvo los datos.
-        {
-            printf("%d", errno);
-            perror("recvfrom()");
-            return 1;
+        returned_int = recvfrom(socket_file_descriptor, message_received, MAXDATASIZE, 0, (struct sockaddr *)&client_addr, (socklen_t *) &addr_size);
+        if(returned_int == -1){
+            fprintf(stderr, "No se pudo recibir\n");
+            exit(1);
         }
 
-        printf("Mensaje proveniente del port %d: %s, direccion %d.%d.%d.%d.\n", MYPORT, buffer, address_holder[0], address_holder[1], address_holder[2], address_holder[3]);
+        printf("Mensaje recibido de (%s): %s\n", inet_ntoa(client_addr.sin_addr), message_received);
         
+        printf("Escribe tu mensaje: ");
+        writeMessage(message_to_send);
+
+        returned_int = sendto(socket_file_descriptor, message_to_send, MAXDATASIZE, 0, (struct sockaddr *)&client_addr, addr_size);
+        if(returned_int == -1){
+            fprintf(stderr, "No se pudo enviar\n");
+            exit(1);
+        }
     }
+
+    close(socket_file_descriptor);
     return 0;
 }
+
+

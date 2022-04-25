@@ -1,62 +1,79 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
+#include <stdio.h>  
+#include <stdlib.h> 
+#include <errno.h>       
+#include <string.h> 
+#include <netdb.h>  
+#include <netinet/in.h> 
+#include <unistd.h> 
+#include <sys/types.h>  
+#include <sys/socket.h> 
+#include <sys/wait.h>   
+#include <arpa/inet.h>  
 
 #define PORT 3490
 #define MAXDATASIZE 100
 
+
+void writeMessage(char message[MAXDATASIZE]){
+    fgets(message,MAXDATASIZE,stdin);
+}
+
 int main(int argc, char *argv[]){
+    printf("Cliente UDP\n");
     int socket_file_descriptor;
-    struct hostent *he;
-    struct sockaddr_in their_addr;
-    struct sockaddr_in	host_address;
-    unsigned char *address_holder;
-    char message[200]="";
+    struct sockaddr_in socket_addr;
+    socklen_t socket_addr_len;
+    char *message_to_send = argv[2];
+    char message_received[MAXDATASIZE];
+
+    int returned_int;
+    struct hostent *host_entry;
 
 
     if (argc != 3 ){
         fprintf(stderr, "usage: client hostname mensaje\n");
         exit(1);
     }
-
-    if ((he=gethostbyname(argv[1])) == NULL){
-        perror("gesthostbyname");
+    
+    host_entry = gethostbyname(argv[1]);
+    if(host_entry == NULL){
+        fprintf(stderr, "No se pudo encontrar el host\n");
         exit(1);
     }
 
-    if ((socket_file_descriptor = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1){
-        perror("socket");
+    socket_file_descriptor = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if(socket_file_descriptor == -1){
+        fprintf(stderr, "No se pudo crear el socket\n");
         exit(1);
     }
 
-    their_addr.sin_family = AF_INET;
-    their_addr.sin_port = htons(PORT);
-    their_addr.sin_addr = *((struct in_addr *)he->h_addr);
-    memset(&(their_addr.sin_zero), '\0',8);
+    socket_addr.sin_family = AF_INET;
+    socket_addr.sin_port = htons(PORT);
+    socket_addr.sin_addr = *((struct in_addr *)host_entry->h_addr);
+    bzero(&(socket_addr.sin_zero), 8*sizeof(unsigned char));
 
-	memset((void*)&host_address,	0,	sizeof(host_address));
-	host_address.sin_family=AF_INET;
-	host_address.sin_port=htons(PORT);
-	address_holder=(unsigned char*)&host_address.sin_addr.s_addr;
-/*
-	 address_holder[0]=127;
-	 address_holder[1]=0;
-	 address_holder[2]=0;
-	 address_holder[3]=1;
-*/
-	strcpy(message, argv[2]);
-	strcat(message, "\0");
+    returned_int = connect(socket_file_descriptor, (struct sockaddr *)&socket_addr, sizeof(struct sockaddr));
+    if(returned_int == -1){
+        fprintf(stderr, "No se pudo conectar\n");
+        exit(1);
+    }
 
-	if (sendto(socket_file_descriptor, message, strlen(message) + 1, 0, (struct sockaddr*)&their_addr, sizeof(struct sockaddr))<0)	// Must use sendto() unless other care is taken. Must explicitly tell where to send each packet of data. Beyond our scope for now. (Hint: Use connect())
-     {
-		perror("sendto()");
-		return 1;
-	 }
+    returned_int = send(socket_file_descriptor, message_to_send, strlen(message_to_send)*sizeof(char), 0);
+    if(returned_int == -1){
+        fprintf(stderr, "No se pudo enviar el mensaje\n");
+        exit(1);
+    }
+
+    printf("Mensaje enviado: %s\n", message_to_send);
+
+    returned_int = recv(socket_file_descriptor, message_received, MAXDATASIZE, 0);
+
+    printf("Message recibido: %s\n", message_received);
+
+    close(socket_file_descriptor);
 
     return 0;
+
 }
+
+
